@@ -1,10 +1,9 @@
-// server.js
 import dotenv from "dotenv";
-dotenv.config(); // ⚡️ precisa ser a primeira linha
+dotenv.config();
 
 import express from "express";
 import cors from "cors";
-import { gerarQuizGemini } from "./utils/gemini.js"; // ⚡️ importando a função correta
+import { gerarQuizGemini } from "./utils/gemini.js";
 
 const app = express();
 app.use(cors());
@@ -17,7 +16,7 @@ app.post("/api/quiz", async (req, res) => {
       return res.status(400).json({ error: "Matéria e assunto são obrigatórios" });
     }
 
-    const questoes = await gerarQuizGemini(materia, assunto); // ⚡️ função Gemini
+    const questoes = await gerarQuizGemini(materia, assunto);
     res.json({ questoes });
   } catch (err) {
     console.error("❌ ERRO AO GERAR QUIZ:", err.message || err);
