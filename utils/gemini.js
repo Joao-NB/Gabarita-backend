@@ -1,3 +1,4 @@
+// utils/gemini.js
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -11,6 +12,9 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 /**
  * Gera 5 questões de múltipla escolha com alternativas, resposta correta e explicação
+ * @param {string} materia 
+ * @param {string} assunto 
+ * @returns {Promise<Array>} Array de objetos de questões
  */
 export async function gerarQuizGemini(materia, assunto) {
   try {
@@ -22,7 +26,9 @@ Cada questão deve ter:
 - resposta correta
 - explicação da resposta
 
-Retorne em formato JSON como este:
+Retorne apenas o JSON puro com o array "questoes", sem markdown ou comentários adicionais.
+Exemplo de formato de saída:
+
 {
   "questoes": [
     {
@@ -40,18 +46,33 @@ Retorne em formato JSON como este:
       contents: prompt,
     });
 
-    // Tenta parsear JSON retornado
+    // Limpa possíveis blocos de markdown (```json```)
+    const cleanedText = response.text.replace(/```json|```/g, "").trim();
+
+    // Tenta parsear JSON
     let dados;
     try {
-      dados = JSON.parse(response.text);
-    } catch {
-      console.error("❌ Erro ao parsear JSON do Gemini, retornando texto cru");
-      return { questoes: [{ enunciado: response.text, alternativas: {}, respostaCorreta: "", explicacao: "" }] };
+      dados = JSON.parse(cleanedText);
+    } catch (err) {
+      console.error("❌ Erro ao parsear JSON do Gemini, retornando texto cru:", err.message);
+      return [{
+        enunciado: cleanedText,
+        alternativas: { a: "", b: "", c: "", d: "" },
+        respostaCorreta: "",
+        explicacao: ""
+      }];
     }
 
+    // Retorna apenas o array de questões
     return dados.questoes || [];
+
   } catch (err) {
     console.error("❌ ERRO no Gemini:", err.message || err);
-    return [{ enunciado: "Erro ao gerar quiz", alternativas: {}, respostaCorreta: "", explicacao: "" }];
+    return [{
+      enunciado: "Erro ao gerar quiz",
+      alternativas: { a: "", b: "", c: "", d: "" },
+      respostaCorreta: "",
+      explicacao: ""
+    }];
   }
 }
