@@ -1,24 +1,12 @@
-import dotenv from "dotenv";
-dotenv.config();
+import 'dotenv/config';
+import { gerarQuizGemini } from './utils/gemini.js';
 
-import OpenAI from "openai";
-
-console.log("OPENAI_API_KEY:", process.env.OPENAI_API_KEY);
-
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-async function test() {
-  try {
-    const res = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: "Diga 'Olá Mundo'" }],
-    });
-    console.log(res.choices[0].message.content);
-  } catch (err) {
-    console.error(err);
-  }
+async function main() {
+  const materia = "Matemática";
+  const assunto = "Funções";
+  
+  const questoes = await gerarQuizGemini(materia, assunto);
+  console.log(JSON.stringify(questoes, null, 2));
 }
 
-test();
+main();
