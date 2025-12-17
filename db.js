@@ -1,21 +1,18 @@
-// db.js
-import { MongoClient } from "mongodb";
-import dotenv from "dotenv";
-dotenv.config();
-
-let client;
-let db;
+import "./config/env.js";
+import mongoose from "mongoose";
 
 export async function connectToDatabase() {
-  if (db) return db; // Retorna conexão existente se já houver
+  const uri = process.env.MONGO_URI;
 
-  client = new MongoClient(process.env.MONGO_URI, { 
-    useNewUrlParser: true, 
-    useUnifiedTopology: true 
-  });
+  if (!uri) {
+    throw new Error("MONGO_URI não definida");
+  }
 
-  await client.connect();
-  db = client.db("gabarita"); // Nome do seu banco de dados
-  console.log("✅ Conectado ao MongoDB");
-  return db;
+  try {
+    await mongoose.connect(uri);
+    console.log("✅ MongoDB conectado com sucesso");
+  } catch (error) {
+    console.error("❌ Erro ao conectar no MongoDB:", error.message);
+    throw error;
+  }
 }
