@@ -1,48 +1,56 @@
 # 📚 Gabarita – Backend
 
-API responsável pela geração, cache e entrega de quizzes educacionais (ENEM) utilizando **Node.js**, **Express**, **MongoDB Atlas** e a **API do Google Gemini**.
+API responsável pela geração, cache inteligente e entrega de quizzes educacionais do ENEM, utilizando **Node.js**, **Express**, **MongoDB Atlas** e a **API do Google Gemini**.
 
-Este backend foi projetado para otimizar custos de requisição à IA, armazenando quizzes previamente gerados e reutilizando-os sempre que possível.
+O backend foi projetado com foco em **performance**, **redução de custos com IA** e **escalabilidade**, reutilizando quizzes previamente gerados por meio de cache com **TTL (Time To Live)** no banco de dados.
+
+🔗 Backend em produção:  
+https://gabarita-backend.onrender.com/
+
+🔗 Frontend:  
+https://gabarita.netlify.app/navegacao
 
 ---
 
 ## 🏗️ Arquitetura da Aplicação
 
-Fluxo principal de funcionamento da aplicação:
+Fluxo principal da aplicação:
 
 ```
 Front-end (Angular)
         ↓
 Backend (Node.js + Express)
         ↓
-Verifica se o quiz existe no MongoDB (cache)
+Consulta MongoDB (cache com TTL)
         ↓
-Se existir:
-    → Retorna o quiz salvo
-Se não existir:
-    → Chama a API do Gemini
-    → Salva o quiz no MongoDB
+Se o quiz existir e estiver válido:
+    → Retorna o quiz do banco
+Se não existir ou estiver expirado:
+    → Chama a API do Google Gemini
+    → Salva o quiz no MongoDB com TTL
     → Retorna o quiz ao front-end
 ```
 
-Esse fluxo garante:
+### Benefícios da Arquitetura
 
-* Menor custo de uso da API do Gemini
-* Respostas mais rápidas
-* Persistência de dados
+- Redução significativa de chamadas à API de IA
+- Menor custo operacional
+- Respostas mais rápidas
+- Cache automático com expiração
+- Backend pronto para escalar
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
-* **Node.js**
-* **Express**
-* **MongoDB Atlas**
-* **Mongoose**
-* **Google Gemini API**
-* **dotenv** (variáveis de ambiente)
-* **CORS**
-* **Render** (deploy do backend)
+- Node.js
+- Express
+- MongoDB Atlas
+- Mongoose
+- Google Gemini API
+- dotenv
+- CORS
+- Render (Deploy)
 
 ---
 
@@ -54,6 +62,8 @@ GABARITA-BACKEND
 │   └── env.js
 ├── utils
 │   └── gemini.js
+├── models
+│   └── quiz.js
 ├── db.js
 ├── server.js
 ├── .env
@@ -67,7 +77,7 @@ GABARITA-BACKEND
 
 ## 🔐 Variáveis de Ambiente
 
-Crie um arquivo `.env` na raiz do projeto com as seguintes variáveis:
+Crie um arquivo `.env` na raiz do projeto:
 
 ```env
 PORT=3000
@@ -75,33 +85,55 @@ MONGODB_URI=mongodb+srv://<usuario>:<senha>@<cluster>.mongodb.net/quizdb?retryWr
 GEMINI_API_KEY=sua_chave_da_api_gemini
 ```
 
-⚠️ **Nunca versionar o arquivo `.env`**
+⚠️ Nunca versionar o arquivo `.env`
 
 ---
 
-## ▶️ Como Executar o Projeto Localmente
+## ⏱️ Cache com TTL (Time To Live)
 
-1️⃣ Clone o repositório:
+O cache dos quizzes é feito diretamente no MongoDB utilizando **TTL Index**.
+
+### Funcionamento
+
+- Cada quiz possui o campo `createdAt`
+- O MongoDB remove automaticamente o documento após o tempo configurado
+- Nenhum cron job é necessário
+
+### Exemplo de Schema com TTL
+
+```js
+createdAt: {
+  type: Date,
+  default: Date.now,
+  expires: 60 * 60 * 24 // 24 horas
+}
+```
+
+---
+
+## ▶️ Como Executar Localmente
+
+1. Clone o repositório:
 
 ```bash
 git clone https://github.com/seu-usuario/gabarita-backend.git
 ```
 
-2️⃣ Instale as dependências:
+2. Instale as dependências:
 
 ```bash
 npm install
 ```
 
-3️⃣ Configure o arquivo `.env`
+3. Configure o `.env`
 
-4️⃣ Inicie o servidor:
+4. Inicie o servidor:
 
 ```bash
 node server.js
 ```
 
-Servidor rodando em:
+Servidor local:
 
 ```
 http://localhost:3000
@@ -111,7 +143,7 @@ http://localhost:3000
 
 ## 🔎 Health Check
 
-Endpoint utilizado para monitoramento e deploy (Render):
+Endpoint utilizado pelo Render:
 
 ```
 GET /health
@@ -133,7 +165,7 @@ Resposta esperada:
 POST /api/quiz
 ```
 
-#### Body:
+#### Body
 
 ```json
 {
@@ -142,7 +174,7 @@ POST /api/quiz
 }
 ```
 
-#### Resposta:
+#### Resposta
 
 ```json
 {
@@ -154,41 +186,38 @@ POST /api/quiz
 
 ## 🧠 Estratégia de Cache
 
-* Antes de chamar a API do Gemini, o backend verifica se o quiz já existe no MongoDB
-* Caso exista, o quiz é retornado imediatamente
-* Caso não exista, o Gemini é acionado, o quiz é salvo no banco e retornado
-
-Essa estratégia reduz significativamente o consumo de quotas da API de IA.
-
----
-
-## 👤 Usuários
-
-* A aplicação suporta **usuários anônimos** inicialmente
-* A arquitetura está preparada para futura implementação de:
-
-  * Cadastro de usuários
-  * Autenticação
-  * Sistema de pontuação (score)
+- Verifica o MongoDB antes de chamar a IA
+- Retorna quizzes existentes e válidos
+- Gera novos quizzes apenas quando necessário
+- Armazena com TTL para expiração automática
 
 ---
 
 ## 🚀 Deploy
 
-* Backend hospedado no **Render**
-* Banco de dados no **MongoDB Atlas**
+- Backend hospedado no **Render**
+- Banco de dados no **MongoDB Atlas**
+- O Atlas é responsável apenas pelo banco, não pelo backend
 
-O MongoDB Atlas **não hospeda o backend**, apenas o banco de dados.
+---
+
+## 👤 Usuários
+
+- Usuários anônimos (fase inicial)
+- Estrutura preparada para:
+  - Autenticação
+  - Sistema de score
+  - Histórico de desempenho
 
 ---
 
 ## 📌 Próximos Passos
 
-* Criar collection de quizzes (cache)
-* Criar collection de usuários
-* Implementar sistema de score
-* Autenticação (JWT ou OAuth)
-* Documentação da API (Swagger / OpenAPI)
+- Cadastro de usuários
+- Autenticação (JWT / OAuth)
+- Sistema de pontuação
+- Rate limit por IP
+- Documentação da API (Swagger / OpenAPI)
 
 ---
 
@@ -200,4 +229,4 @@ Projeto desenvolvido por **João Guilherme** 🚀
 
 ## 📄 Licença
 
-Este projeto é de uso educacional e experimental.
+Projeto de uso educacional e experimental.
