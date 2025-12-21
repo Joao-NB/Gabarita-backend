@@ -6,12 +6,16 @@
   import { connectToDatabase } from "./db.js";
   import Quiz from "./models/quiz.js";
   import userRoutes from "./routes/users.js";
+  import authRoutes from "./routes/auth.routes.js";
+  import protectedRoutes from "./routes/protected.routes.js";
 
   const app = express();
 
   app.use(cors());
   app.use(express.json());
   app.use("/api/users", userRoutes);
+  app.use("/auth", authRoutes);
+  app.use("/api", protectedRoutes);
 
   // 🔎 Health check
   app.get("/health", (req, res) => {

@@ -1,17 +1,24 @@
 import express from "express";
-import User from "../models/User.js";
+import { authMiddleware } from "../middlewares/auth.middleware.js";
+import { rankingGlobal } from "../controllers/ranking.controller.js";
+
 const router = express.Router();
 
-// Endpoint para criar usuário anônimo
-router.post("/anonymous", async (req, res) => {
-  try {
-    const user = new User({ isAnonymous: true });
-    await user.save();
-    res.json({ userId: user._id });
-  } catch (err) {
-    console.error("❌ ERRO AO CRIAR USUÁRIO ANÔNIMO:", err);
-    res.status(500).json({ error: "Erro ao criar usuário anônimo" });
-  }
+/* Ranking público */
+router.get("/ranking", rankingGlobal);
+
+/* Usuário atual */
+router.get("/me", authMiddleware, (req, res) => {
+  const user = req.user;
+
+  res.json({
+    id: user._id,
+    nickname: user.nickname,
+    avatarId: user.avatarId,
+    score: user.score,
+    quizzesGerados: user.quizzesGerados,
+    provider: user.provider,
+  });
 });
 
 export default router;

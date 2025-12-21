@@ -1,43 +1,67 @@
 # 📚 Gabarita – Backend
 
-API responsável pela geração, cache inteligente e entrega de quizzes educacionais do ENEM, utilizando **Node.js**, **Express**, **MongoDB Atlas** e a **API do Google Gemini**.
+Backend responsável pela **geração inteligente de quizzes do ENEM**, **gestão de usuários (anônimos e autenticados)**, **pontuação**, **ranking global** e **gamificação**, utilizando **Node.js**, **Express**, **MongoDB Atlas**, **JWT** e **Google Gemini API**.
 
-O backend foi projetado com foco em **performance**, **redução de custos com IA** e **escalabilidade**, reutilizando quizzes previamente gerados por meio de cache com **TTL (Time To Live)** no banco de dados.
+O sistema foi projetado com foco em:
 
-🔗 Backend em produção:  
+- ⚡ **Performance**
+- 💰 **Redução de custos com IA**
+- 🔐 **Segurança**
+- 📈 **Escalabilidade**
+- 🎮 **Gamificação real**
+- 🧠 **Defensabilidade técnica em entrevistas**
+
+🔗 **Backend em produção:**  
 https://gabarita-backend.onrender.com/
 
-🔗 Frontend:  
+🔗 **Frontend:**  
 https://gabarita.netlify.app/navegacao
 
 ---
 
-## 🏗️ Arquitetura da Aplicação
+## 🏗️ Visão Geral da Arquitetura
 
 Fluxo principal da aplicação:
 
 ```
+
 Front-end (Angular)
-        ↓
+↓
+JWT (LocalStorage)
+↓
 Backend (Node.js + Express)
-        ↓
-Consulta MongoDB (cache com TTL)
-        ↓
-Se o quiz existir e estiver válido:
-    → Retorna o quiz do banco
-Se não existir ou estiver expirado:
-    → Chama a API do Google Gemini
-    → Salva o quiz no MongoDB com TTL
-    → Retorna o quiz ao front-end
+↓
+MongoDB Atlas
+↓
+┌─────────────────────────────┐
+│  Cache de Quizzes (TTL)     │
+│  Usuários                   │
+│  Pontuação                  │
+│  Ranking Global             │
+│  Badges / Gamificação       │
+└─────────────────────────────┘
+↓
+Se quiz existir:
+→ Retorna do cache
+Se não existir:
+→ Chama Google Gemini
+→ Salva no MongoDB com TTL
+→ Retorna ao front
+
 ```
 
-### Benefícios da Arquitetura
+---
 
-- Redução significativa de chamadas à API de IA
-- Menor custo operacional
-- Respostas mais rápidas
-- Cache automático com expiração
-- Backend pronto para escalar
+## ✅ Principais Diferenciais Técnicos
+
+- Cache inteligente de quizzes com **TTL automático**
+- Usuários **anônimos com JWT**
+- Ranking global persistente
+- Pontuação por quiz + soma global
+- Sistema de **badges (emblemas)**
+- Proteção básica contra abuso/fraude
+- Estrutura pronta para OAuth (Google)
+- Arquitetura limpa (MVC + Services)
 
 ---
 
@@ -47,6 +71,8 @@ Se não existir ou estiver expirado:
 - Express
 - MongoDB Atlas
 - Mongoose
+- JWT (jsonwebtoken)
+- bcryptjs
 - Google Gemini API
 - dotenv
 - CORS
@@ -54,24 +80,41 @@ Se não existir ou estiver expirado:
 
 ---
 
-## 📂 Estrutura do Projeto
+## 📂 Estrutura de Diretórios
 
 ```
-GABARITA-BACKEND
-├── config
-│   └── env.js
-├── utils
-│   └── gemini.js
-├── models
-│   └── quiz.js
-├── db.js
-├── server.js
-├── .env
+
+GABARITA-BACKEND/
+├── config/
+│   └── env.js                   # Configuração de variáveis de ambiente
+├── controllers/
+│   ├── auth.controller.js       # Login, registro e login anônimo
+│   ├── quiz.controller.js       # Lógica de quizzes e pontuação
+│   └── ranking.controller.js    # Ranking global
+├── middlewares/
+│   ├── auth.middleware.js       # Proteção JWT
+│   └── rateLimit.middleware.js  # Anti-abuso simples
+├── models/
+│   ├── Quiz.js                  # Cache de quizzes (TTL)
+│   ├── User.js                  # Usuários (anônimo / registrado)
+│   └── UserQuiz.js              # Histórico e pontuação por quiz
+├── routes/
+│   ├── auth.routes.js           # Rotas de autenticação
+│   ├── protected.routes.js      # Rotas protegidas por JWT
+│   └── users.js                 # Rotas de usuário
+├── utils/
+│   ├── auth.js                  # Helpers de autenticação
+│   ├── gemini.js                # Integração com IA
+│   └── jwt.js                   # Criação e validação de tokens
+├── db.js                        # Conexão com MongoDB
+├── server.js                    # Entry point
+├── .env                         # Variáveis sensíveis (não versionar)
 ├── .gitignore
 ├── package.json
 ├── package-lock.json
 └── README.md
-```
+
+````
 
 ---
 
@@ -81,37 +124,126 @@ Crie um arquivo `.env` na raiz do projeto:
 
 ```env
 PORT=3000
-MONGODB_URI=mongodb+srv://<usuario>:<senha>@<cluster>.mongodb.net/quizdb?retryWrites=true&w=majority
-GEMINI_API_KEY=sua_chave_da_api_gemini
-```
+MONGODB_URI=mongodb+srv://<usuario>:<senha>@<cluster>.mongodb.net/gabarita
+GEMINI_API_KEY=sua_chave_gemini
 
-⚠️ Nunca versionar o arquivo `.env`
+JWT_SECRET=super_secret_key_gabarita
+JWT_EXPIRES_IN=7d
+````
 
----
-
-## ⏱️ Cache com TTL (Time To Live)
-
-O cache dos quizzes é feito diretamente no MongoDB utilizando **TTL Index**.
-
-### Funcionamento
-
-- Cada quiz possui o campo `createdAt`
-- O MongoDB remove automaticamente o documento após o tempo configurado
-- Nenhum cron job é necessário
-
-### Exemplo de Schema com TTL
-
-```js
-createdAt: {
-  type: Date,
-  default: Date.now,
-  expires: 60 * 60 * 24 // 24 horas
-}
-```
+⚠️ **Nunca versionar o `.env`**
 
 ---
 
-## ▶️ Como Executar Localmente
+## 👤 Tipos de Usuário
+
+### 🧑 Usuário Anônimo
+
+* Entra apenas com:
+
+  * nickname
+  * avatar (pré-definido)
+* Recebe:
+
+  * JWT
+  * userId
+* Pode:
+
+  * jogar quizzes
+  * pontuar
+  * aparecer no ranking
+* Pode futuramente:
+
+  * converter para conta registrada sem perder dados
+
+---
+
+### 🔐 Usuário Registrado
+
+* Login com email + senha
+* Senha criptografada (bcrypt)
+* Histórico completo
+* Ranking global
+* Badges
+* Preparado para OAuth (Google)
+
+---
+
+## 🎯 Sistema de Pontuação
+
+* Cada quiz gera:
+
+  * pontuação individual
+* O usuário possui:
+
+  * totalPoints → soma global
+  * quizzesCount → total de quizzes jogados
+* Ranking global é baseado em:
+
+  * totalPoints (decrescente)
+
+---
+
+## 🏆 Ranking Global
+
+Exibe:
+
+* Avatar
+* Nickname
+* Total de quizzes gerados/jogados
+* Pontuação acumulada
+
+Ordenação:
+
+```
+ORDER BY totalPoints DESC
+```
+
+---
+
+## 🎖️ Sistema de Badges (Gamificação)
+
+Exemplos:
+
+* 🥉 Primeiro Quiz
+* 🥈 10 Quizzes
+* 🥇 100 Pontos
+* 🔥 Sequência de acertos
+* 🧠 Especialista por matéria (futuro)
+
+Badges ficam salvos no usuário.
+
+---
+
+## ⏱️ Cache de Quizzes (TTL)
+
+* Cache direto no MongoDB
+* TTL configurado para **48 horas**
+* Remoção automática pelo MongoDB
+* Nenhum cron job necessário
+
+Benefícios:
+
+* Redução de chamadas à IA
+* Menor custo
+* Respostas mais rápidas
+
+---
+
+## 🔐 Segurança & Anti-Fraude
+
+* JWT em todas as rotas sensíveis
+* Middleware de autenticação
+* Rate limit simples por IP
+* Usuário não envia pontuação → backend calcula
+* Estrutura pronta para:
+
+  * antifraude avançado
+  * detecção de padrões
+
+---
+
+## ▶️ Executar Localmente
 
 1. Clone o repositório:
 
@@ -143,13 +275,11 @@ http://localhost:3000
 
 ## 🔎 Health Check
 
-Endpoint utilizado pelo Render:
-
 ```
 GET /health
 ```
 
-Resposta esperada:
+Resposta:
 
 ```json
 { "status": "ok" }
@@ -157,15 +287,15 @@ Resposta esperada:
 
 ---
 
-## 🎯 Endpoint Principal
+## 📡 Endpoint Principal
 
-### Gerar Quiz
+### Gerar Quiz (com cache)
 
 ```
 POST /api/quiz
 ```
 
-#### Body
+Body:
 
 ```json
 {
@@ -174,7 +304,7 @@ POST /api/quiz
 }
 ```
 
-#### Resposta
+Resposta:
 
 ```json
 {
@@ -184,40 +314,21 @@ POST /api/quiz
 
 ---
 
-## 🧠 Estratégia de Cache
-
-- Verifica o MongoDB antes de chamar a IA
-- Retorna quizzes existentes e válidos
-- Gera novos quizzes apenas quando necessário
-- Armazena com TTL para expiração automática
-
----
-
 ## 🚀 Deploy
 
-- Backend hospedado no **Render**
-- Banco de dados no **MongoDB Atlas**
-- O Atlas é responsável apenas pelo banco, não pelo backend
+* Backend: **Render**
+* Banco de Dados: **MongoDB Atlas**
+* IA: **Google Gemini API**
 
 ---
 
-## 👤 Usuários
+## 🧪 Estado do Projeto
 
-- Usuários anônimos (fase inicial)
-- Estrutura preparada para:
-  - Autenticação
-  - Sistema de score
-  - Histórico de desempenho
-
----
-
-## 📌 Próximos Passos
-
-- Cadastro de usuários
-- Autenticação (JWT / OAuth)
-- Sistema de pontuação
-- Rate limit por IP
-- Documentação da API (Swagger / OpenAPI)
+✔ Backend arquiteturalmente concluído
+✔ Pronto para front-end
+✔ Defensável em entrevistas
+✔ Escalável
+✔ Gamificado
 
 ---
 
@@ -229,4 +340,7 @@ Projeto desenvolvido por **João Guilherme** 🚀
 
 ## 📄 Licença
 
-Projeto de uso educacional e experimental.
+Projeto educacional e experimental.
+
+```
+```
